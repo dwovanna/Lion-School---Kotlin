@@ -152,7 +152,11 @@ fun Home() {
                                 modifier = Modifier
                                     .width(280.dp)
                                     .height(110.dp)
-                                    .border(2.dp, color = Color.White, shape = RoundedCornerShape(20.dp)),
+                                    .border(
+                                        2.dp,
+                                        color = Color.White,
+                                        shape = RoundedCornerShape(20.dp)
+                                    ),
                                 backgroundColor = Color(57, 90, 213, 255),
                                 shape = RoundedCornerShape(20.dp),
 
@@ -184,15 +188,25 @@ fun Home() {
 
                                         )
                                     }
-
                                 }
 
                             }
                         }
                     }
-                
-            }
+                    Column(
 
+                    ) {
+                        Icon(painter = painterResource(id = R.drawable.footer),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .width(250.dp)
+                                .height(350.dp)
+                        )
+                 
+             }
+
+            }
         }
     }
 }
