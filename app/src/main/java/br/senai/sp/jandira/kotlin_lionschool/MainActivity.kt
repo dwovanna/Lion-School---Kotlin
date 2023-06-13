@@ -1,17 +1,17 @@
 package br.senai.sp.jandira.kotlin_lionschool
 
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -27,7 +27,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.senai.sp.jandira.kotlin_lionschool.model.Courses
+import br.senai.sp.jandira.kotlin_lionschool.model.CoursesList
+import br.senai.sp.jandira.kotlin_lionschool.model.Students
+import br.senai.sp.jandira.kotlin_lionschool.service.RetrofitFactory
 import br.senai.sp.jandira.kotlin_lionschool.ui.theme.KotlinLionSchoolTheme
+import coil.compose.AsyncImage
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +54,23 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Home() {
     val context = LocalContext.current
+    var listCourses by remember {
+        mutableStateOf(listOf<Courses>())
+    }
+
+    val call = RetrofitFactory().getCourseService().getCourse()
+
+    call.enqueue(object : Callback<CoursesList> {
+        override fun onResponse(call: Call<CoursesList>, response: Response<CoursesList>) {
+            listCourses = response.body()!!.cursos
+        }
+
+        override fun onFailure(call: Call<CoursesList>, t: Throwable) {
+            Log.i("teste", "onFailure: ${t.message}")
+        }
+    })
+
+    Log.i("TAG", "$listCourses")
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -146,14 +171,21 @@ fun Home() {
                             .padding(10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        items(2) {
+                        items(listCourses) {
+
                             Spacer(modifier = Modifier.size(20.dp))
                             Card(
                                 modifier = Modifier
                                     .width(280.dp)
                                     .height(110.dp)
+                                    .clickable {
+                                        var openStudents = Intent(context, Cursos::class.java)
+                                        openStudents.putExtra("sigla", it.sigla)
+
+                                        context.startActivity(openStudents)
+                                    }
                                     .border(
-                                        2.dp,
+                                        1.5.dp,
                                         color = Color.White,
                                         shape = RoundedCornerShape(20.dp)
                                     ),
@@ -162,7 +194,8 @@ fun Home() {
 
                             ) {
                                 Row(modifier = Modifier.padding(8.dp)) {
-                                    Image(painter = painterResource(id = R.drawable.ds),
+                                    Image(
+                                        painter = painterResource(id = R.drawable.ds),
                                         contentDescription = "",
                                         modifier = Modifier
                                             .size(70.dp)
@@ -172,7 +205,7 @@ fun Home() {
 
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
-                                            text ="DS",
+                                        text = it.sigla,
                                             fontSize = 35.sp,
                                             color = Color.White,
                                             fontWeight = FontWeight.Bold,
@@ -181,7 +214,7 @@ fun Home() {
 
                                         Spacer(modifier = Modifier.size(10.dp))
 
-                                        Text(text = "Desenvolvimento de Sistemas",
+                                        Text(text = it.nome,
                                             fontSize = 13.sp,
                                             color = Color.White,
                                             fontFamily = FontFamily.Serif
@@ -193,19 +226,6 @@ fun Home() {
                             }
                         }
                     }
-                    Column(
-
-                    ) {
-                        Icon(painter = painterResource(id = R.drawable.footer),
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier
-                                .width(250.dp)
-                                .height(350.dp)
-                        )
-                 
-             }
-
             }
         }
     }

@@ -1,6 +1,7 @@
 package br.senai.sp.jandira.kotlin_lionschool
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -8,38 +9,73 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import br.senai.sp.jandira.kotlin_lionschool.model.Students
+import br.senai.sp.jandira.kotlin_lionschool.model.StudentsList
+import br.senai.sp.jandira.kotlin_lionschool.service.RetrofitFactory
 import br.senai.sp.jandira.kotlin_lionschool.ui.theme.KotlinLionSchoolTheme
+import coil.compose.AsyncImage
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 class Cursos : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             KotlinLionSchoolTheme {
-                DefaultPreview()
+                val siglaCurso = intent.getStringExtra("sigla")
+                DefaultPreview(siglaCurso.toString())
 
             }
         }
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun DefaultPreview() {
+fun DefaultPreview(curso: String) {
     val context = LocalContext.current
+
+    // Estado para controlar a opção selecionada
+    var selectedOption by remember { mutableStateOf(1) }
+
+    var listStudents by remember {
+        mutableStateOf(listOf<Students>())
+    }
+
+    var nameCourse by remember {
+        mutableStateOf("")
+    }
+
+    val call = RetrofitFactory().getStudentsService().getCourseStudent(curso)
+
+    call.enqueue(object : Callback<StudentsList> {
+        override fun onResponse(call: Call<StudentsList>, response: Response<StudentsList>) {
+            listStudents = response.body()!!.alunos
+            nameCourse = response.body()!!.nomeCurso
+        }
+
+        override fun onFailure(call: Call<StudentsList>, t: Throwable) {
+            Log.i("teste", "onFailure: ${t.message} ")
+        }
+    })
+
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -149,20 +185,25 @@ fun DefaultPreview() {
 
                 ) {
                     Spacer(modifier = Modifier.size(15.dp))
-                    Button(
-                        onClick = { /*TODO */ },
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .height(50.dp)
-                        .width(150.dp)
-                        .border(
-                            1.dp,
-                            color = Color.White,
-                            shape = RoundedCornerShape(10.dp)
-                        ),
-
-                    ) {
-                        
+                    Row() {
+                        ToggleButton(selectedOption, onOptionSelected = { option ->
+                            selectedOption = option
+                            // Lógica para tratar a opção selecionada
+                            when (option) {
+                                1 -> {
+                                    // Opção 1 selecionada
+                                    // Faça algo aqui
+                                }
+                                2 -> {
+                                    // Opção 2 selecionada
+                                    // Faça algo aqui
+                                }
+                                3 -> {
+                                    // Opção 3 selecionada
+                                    // Faça algo aqui
+                                }
+                            }
+                        })
                     }
 
                 }
@@ -175,7 +216,13 @@ fun DefaultPreview() {
                         .padding(10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    items(4) {
+                    items(listStudents) {
+                        var backgroundCard = Color(0, 0, 0)
+                        if (it.status == "Finalizado") {
+                            backgroundCard = Color(51, 71, 176, 255)
+                        } else {
+                            backgroundCard = Color(229, 182, 87, 255)
+                        }
                         Spacer(modifier = Modifier.size(20.dp))
                         Card(
                             modifier = Modifier
@@ -186,12 +233,12 @@ fun DefaultPreview() {
                                     color = Color.White,
                                     shape = RoundedCornerShape(30.dp)
                                 ),
-                            backgroundColor = Color(241, 192, 43, 255),
+                            backgroundColor = backgroundCard,
                             shape = RoundedCornerShape(30.dp),
                         ) {
                             Row(modifier = Modifier.padding(8.dp)) {
-                                Image(
-                                    painter = painterResource(id = R.drawable.perfil),
+                                AsyncImage(
+                                    model = it.foto,
                                     contentDescription = "",
                                     modifier = Modifier
                                         .size(70.dp)
@@ -200,7 +247,7 @@ fun DefaultPreview() {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
                                     Text(
-                                        text = "JOSÉ MATHEUS DA SILVA MIRANDA",
+                                        text = it.nome,
                                         fontSize = 20.sp,
                                         color = Color.White,
                                         fontFamily = FontFamily.SansSerif
@@ -229,6 +276,43 @@ fun DefaultPreview() {
 
             }
 
+        }
+    }
+}
+@Composable
+fun ToggleButton(selectedOption: Int, onOptionSelected: (Int) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        val options = listOf("Todos", "Cursando", "Finalizado")
+        options.forEachIndexed { index, option ->
+            val isSelected = index + 1 == selectedOption
+            Button(
+                onClick = { onOptionSelected(index + 1) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp)
+                    .padding(horizontal = 6.dp),
+                shape = MaterialTheme.shapes.medium,
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = if (isSelected) colorResource(id = R.color.blue_default) else colorResource(
+                        id = R.color.second_blue
+                    ),
+                    contentColor = if (isSelected) colorResource(id = R.color.yellow_default) else colorResource(
+                        id = R.color.blue_default
+                    )
+                )
+            ) {
+                Text(
+                    text = option,
+                    style = MaterialTheme.typography.body1,
+                    fontSize = 16.sp
+
+                )
+            }
         }
     }
 }
